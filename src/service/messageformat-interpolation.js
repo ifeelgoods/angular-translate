@@ -99,6 +99,11 @@ angular.module('pascalprecht.translate')
    */
   $translateInterpolator.interpolate = function (string, interpolateParams) {
 
+    // Avoid requesting MessageFormat with an empty string (#789)
+    if (!string || !string.length) {
+      return string;
+    }
+
     interpolateParams = interpolateParams || {};
 
     if ($sanitizeValueStrategy) {
