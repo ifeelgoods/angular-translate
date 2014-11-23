@@ -1474,6 +1474,11 @@ angular.module('pascalprecht.translate').provider('$translate', ['$STORAGE_KEY',
           useLanguage(key);
         }
 
+        // Ensure the promise for this language will be removed regardless the result
+        deferred.promise['finally'](function () {
+          langPromises[key] = undefined;
+        });
+
         return deferred.promise;
       };
 
