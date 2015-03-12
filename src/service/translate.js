@@ -825,7 +825,7 @@ angular.module('pascalprecht.translate').provider('$translate', ['$STORAGE_KEY',
           fallbackIndex,
           startFallbackIteration;
 
-      var $translate = function (translationId, interpolateParams, interpolationId, defaultTranslationText) {
+      var $translate = function (translationId, interpolateParams, interpolationId, defaultTranslationText, requestedLangKey) {
 
         // Duck detection: If the first argument is an array, a bunch of translations was requested.
         // The result is an object.
@@ -844,7 +844,7 @@ angular.module('pascalprecht.translate').provider('$translate', ['$STORAGE_KEY',
                 deferred.resolve([translationId, value]);
               };
               // we don't care whether the promise was resolved or rejected; just store the values
-              $translate(translationId, interpolateParams, interpolationId, defaultTranslationText).then(regardless, regardless);
+              $translate(translationId, interpolateParams, interpolationId, defaultTranslationText, requestedLangKey).then(regardless, regardless);
               return deferred.promise;
             };
             for (var i = 0, c = translationIds.length; i < c; i++) {
@@ -901,10 +901,10 @@ angular.module('pascalprecht.translate').provider('$translate', ['$STORAGE_KEY',
           // no promise to wait for? okay. Then there's no loader registered
           // nor is a one pending for language that comes from storage.
           // We can just translate.
-          determineTranslation(translationId, interpolateParams, interpolationId, defaultTranslationText).then(deferred.resolve, deferred.reject);
+          determineTranslation(translationId, interpolateParams, interpolationId, defaultTranslationText, requestedLangKey).then(deferred.resolve, deferred.reject);
         } else {
           promiseToWaitFor.then(function () {
-            determineTranslation(translationId, interpolateParams, interpolationId, defaultTranslationText).then(deferred.resolve, deferred.reject);
+            determineTranslation(translationId, interpolateParams, interpolationId, defaultTranslationText, requestedLangKey).then(deferred.resolve, deferred.reject);
           }, deferred.reject);
         }
         return deferred.promise;
@@ -1260,12 +1260,18 @@ angular.module('pascalprecht.translate').provider('$translate', ['$STORAGE_KEY',
         return resolveForFallbackLanguageInstant((startFallbackIteration>0 ? startFallbackIteration : fallbackIndex), translationId, interpolateParams, Interpolator);
       };
 
-      var determineTranslation = function (translationId, interpolateParams, interpolationId, defaultTranslationText) {
+      var determineTranslation = function (translationId, interpolateParams, interpolationId, defaultTranslationText, requestedLangKey) {
 
         var deferred = $q.defer();
+        var table = $translationTable;
+        var Interpolator = (interpolationId) ? interpolatorHashMap[interpolationId] : defaultInterpolator;
 
-        var table = $uses ? $translationTable[$uses] : $translationTable,
-            Interpolator = (interpolationId) ? interpolatorHashMap[interpolationId] : defaultInterpolator;
+
+        if (angular.isDefined(requestedLangKey) && (typeof $translationTable[requestedLangKey] !== undefined)) {
+          table = $translationTable[requestedLangKey];
+        } else if ($uses) {
+           table =  $translationTable[$uses];
+        }
 
         // if the translation id exists, we can just interpolate it
         if (table && Object.prototype.hasOwnProperty.call(table, translationId)) {
@@ -1316,11 +1322,16 @@ angular.module('pascalprecht.translate').provider('$translate', ['$STORAGE_KEY',
         return deferred.promise;
       };
 
-      var determineTranslationInstant = function (translationId, interpolateParams, interpolationId) {
+      var determineTranslationInstant = function (translationId, interpolateParams, interpolationId, requestedLangKey) {
 
-        var result, table = $uses ? $translationTable[$uses] : $translationTable,
+        var result, table = $translationTable,
             Interpolator = defaultInterpolator;
 
+        if (angular.isDefined(requestedLangKey) && (typeof $translationTable[requestedLangKey] !== undefined)) {
+          table = $translationTable[requestedLangKey];
+        } else if ($uses) {
+           table =  $translationTable[$uses];
+        }
         // if the interpolation id exists use custom interpolator
         if (interpolatorHashMap && Object.prototype.hasOwnProperty.call(interpolatorHashMap, interpolationId)) {
           Interpolator = interpolatorHashMap[interpolationId];
@@ -1332,7 +1343,7 @@ angular.module('pascalprecht.translate').provider('$translate', ['$STORAGE_KEY',
 
           // If using link, rerun $translate with linked translationId and return it
           if (translation.substr(0, 2) === '@:') {
-            result = determineTranslationInstant(translation.substr(2), interpolateParams, interpolationId);
+            result = determineTranslationInstant(translation.substr(2), interpolateParams, interpolationId, requestedLangKey);
           } else {
             result = Interpolator.interpolate(translation, interpolateParams);
           }
@@ -1695,7 +1706,7 @@ angular.module('pascalprecht.translate').provider('$translate', ['$STORAGE_KEY',
        *
        * @return {string} translation
        */
-      $translate.instant = function (translationId, interpolateParams, interpolationId) {
+      $translate.instant = function (translationId, interpolateParams, interpolationId, requestedLangKey) {
 
         // Detect undefined and null values to shorten the execution and prevent exceptions
         if (translationId === null || angular.isUndefined(translationId)) {
@@ -1723,26 +1734,34 @@ angular.module('pascalprecht.translate').provider('$translate', ['$STORAGE_KEY',
         }
 
         var result, possibleLangKeys = [];
-        if ($preferredLanguage) {
-          possibleLangKeys.push($preferredLanguage);
-        }
-        if ($uses) {
-          possibleLangKeys.push($uses);
-        }
-        if ($fallbackLanguage && $fallbackLanguage.length) {
-          possibleLangKeys = possibleLangKeys.concat($fallbackLanguage);
-        }
-        for (var j = 0, d = possibleLangKeys.length; j < d; j++) {
-          var possibleLangKey = possibleLangKeys[j];
-          if ($translationTable[possibleLangKey]) {
-            if (typeof $translationTable[possibleLangKey][translationId] !== 'undefined') {
-              result = determineTranslationInstant(translationId, interpolateParams, interpolationId);
-            } else if ($notFoundIndicatorLeft || $notFoundIndicatorRight) {
-              result = applyNotFoundIndicators(translationId);
-            }
+        if (angular.isDefined(requestedLangKey)) {
+          if ($translationTable[requestedLangKey] && typeof $translationTable[requestedLangKey][translationId] !== 'undefined') {
+            result = determineTranslationInstant(translationId, interpolateParams, interpolationId, requestedLangKey);
+          } else if ($notFoundIndicatorLeft || $notFoundIndicatorRight) {
+            result = applyNotFoundIndicators(translationId);
           }
-          if (typeof result !== 'undefined') {
-            break;
+        } else {
+          if ($preferredLanguage) {
+            possibleLangKeys.push($preferredLanguage);
+          }
+          if ($uses) {
+            possibleLangKeys.push($uses);
+          }
+          if ($fallbackLanguage && $fallbackLanguage.length) {
+            possibleLangKeys = possibleLangKeys.concat($fallbackLanguage);
+          }
+          for (var j = 0, d = possibleLangKeys.length; j < d; j++) {
+            var possibleLangKey = possibleLangKeys[j];
+            if ($translationTable[possibleLangKey]) {
+              if (typeof $translationTable[possibleLangKey][translationId] !== 'undefined') {
+                result = determineTranslationInstant(translationId, interpolateParams, interpolationId);
+              } else if ($notFoundIndicatorLeft || $notFoundIndicatorRight) {
+                result = applyNotFoundIndicators(translationId);
+              }
+            }
+            if (typeof result !== 'undefined') {
+              break;
+            }
           }
         }
 

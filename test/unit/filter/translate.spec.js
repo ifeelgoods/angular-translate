@@ -147,6 +147,35 @@ describe('pascalprecht.translate', function () {
       expect($translate('FOO', {}, 'custom')).toEqual('custom interpolation');
     }));
   });
+
+  describe('request explicit language', function () {
+
+    beforeEach(module('pascalprecht.translate', function ($translateProvider, $provide) {
+
+      $translateProvider.translations('en', {
+        'FOO': 'Yesssss'
+      })
+      .translations('de', {
+        'FOO': 'Yesssss_de'
+      });
+
+      $translateProvider
+        .preferredLanguage('en');
+    }));
+
+    var $translate, $filter, $rootScope, $q;
+    beforeEach(inject(function (_$filter_, _$rootScope_, _$q_) {
+      $filter = _$filter_;
+      $rootScope = _$rootScope_;
+      $q = _$q_;
+      $translate = $filter('translate');
+    }));
+
+    it('should translate the translation ID using the requested Language Key', inject(function () {
+      expect($translate('FOO', {}, {}, 'de')).toEqual('Yesssss_de');
+    }));
+  });
+
   describe('shall add the prefix and suffix elements', function () {
 
     beforeEach(module('pascalprecht.translate', function ($translateProvider, $provide) {

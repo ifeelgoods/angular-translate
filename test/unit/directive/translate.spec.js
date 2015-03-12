@@ -19,6 +19,10 @@ describe('pascalprecht.translate', function () {
           'AND_THIS': '{{value + value}}',
           'BLANK_VALUE': ''
         })
+        .translations('de', {
+          'TRANSLATION_ID': 'foo_de',
+          'TD_WITH_VALUE': 'Lorem Ipsum (de) {{value}}'
+        })
         .preferredLanguage('en');
     }));
 
@@ -204,6 +208,33 @@ describe('pascalprecht.translate', function () {
         $rootScope.translationId = '';
         $rootScope.$digest();
         expect(element.text()).toBe('');
+      });
+    });
+
+    describe('should handle translation when a explicit language is requested', function () {
+      it('should return translation in the correct language if translation exists and translation id is passed at attribute', function () {
+        element = $compile('<div translate="TRANSLATION_ID" translate-language="de"></div>')($rootScope);
+        $rootScope.$digest();
+        expect(element.text()).toBe('foo_de');
+      });
+
+      it('should return translation in the correct language if translation exists', function () {
+        element = $compile('<div translate translate-language="de">TRANSLATION_ID</div>')($rootScope);
+        $rootScope.$digest();
+        expect(element.text()).toBe('foo_de');
+      });
+
+      it('should return translation in the correct language if translation exists when translation is an interpolation', function () {
+        element = $compile('<div translate="TD_WITH_VALUE" translate-language="de"></div>')($rootScope);
+        $rootScope.$digest();
+        expect(element.text()).toBe('Lorem Ipsum (de) ');
+      });
+
+      it('should return translation in the correct language if translation exists when translation is an interpolation and a provided value', function () {
+        $rootScope.value = '123';
+        element = $compile('<div translate="TD_WITH_VALUE" translate-language="de" translate-values="{value: \'foo\'}"></div>')($rootScope);
+        $rootScope.$digest();
+        expect(element.text()).toBe('Lorem Ipsum (de) foo');
       });
     });
 

@@ -51,13 +51,13 @@ angular.module('pascalprecht.translate')
    </example>
  */
 .filter('translate', ['$parse', '$translate', function ($parse, $translate) {
-  var translateFilter = function (translationId, interpolateParams, interpolation) {
+  var translateFilter = function (translationId, interpolateParams, interpolation, requestedLangKey) {
 
     if (!angular.isObject(interpolateParams)) {
       interpolateParams = $parse(interpolateParams)(this);
     }
 
-    return $translate.instant(translationId, interpolateParams, interpolation);
+    return $translate.instant(translationId, interpolateParams, interpolation, requestedLangKey);
   };
 
   // Since AngularJS 1.3, filters which are not stateless (depending at the scope)
