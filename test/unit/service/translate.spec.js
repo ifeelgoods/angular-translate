@@ -1607,6 +1607,10 @@ describe('pascalprecht.translate', function () {
     beforeEach(module('pascalprecht.translate', function ($translateProvider) {
       $translateProvider
         .translations('en', translationMock)
+        .translations('de', {
+          'FOO': 'bar_de',
+          'BAR': 'foo_de'
+        })
         .translations('en', {
           'FOO': 'bar',
           'BAR': 'foo'
@@ -1635,6 +1639,10 @@ describe('pascalprecht.translate', function () {
       expect($translate.instant('BLANK_VALUE')).toEqual('');
     });
 
+    it('should return translation for the explicitely requested langKey', function () {
+      expect($translate.instant('FOO', undefined, undefined, 'de')).toEqual('bar_de');
+    });
+
    it('should return translations of multiple translation ids', function () {
       var result = $translate.instant(['FOO', 'FOO2', 'BLANK_VALUE']);
       expect(result.FOO).toEqual('bar');
@@ -1654,6 +1662,9 @@ describe('pascalprecht.translate', function () {
         })
         .translations('de', {
           'FOO2': 'bar2'
+        })
+        .translations('ja', {
+          'FOO': 'bar_japan'
         })
         .preferredLanguage('de')
         .fallbackLanguage('en');
@@ -1687,6 +1698,10 @@ describe('pascalprecht.translate', function () {
 
     it('should return translation id if translation id nost exist', function () {
       expect($translate.instant('FOO3')).toEqual('FOO3');
+    });
+
+    it('should return translation for the explicitely requested langKey', function () {
+      expect($translate.instant('FOO', undefined, undefined, 'ja')).toEqual('bar_japan');
     });
 
     it('should return translation id with default interpolator if translation id nost exist', function () {

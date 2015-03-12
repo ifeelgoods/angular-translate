@@ -191,6 +191,10 @@ angular.module('pascalprecht.translate')
           scope.defaultText = value;
         });
 
+        iAttr.$observe('translateLanguage', function (value) {
+          scope.requestedLangKey = value;
+        });
+
         if (translateValuesExist) {
           iAttr.$observe('translateValues', function (interpolateParams) {
             if (interpolateParams) {
@@ -219,15 +223,15 @@ angular.module('pascalprecht.translate')
         var updateTranslations = function () {
           for (var key in translationIds) {
             if (translationIds.hasOwnProperty(key)) {
-              updateTranslation(key, translationIds[key], scope, scope.interpolateParams, scope.defaultText);
+              updateTranslation(key, translationIds[key], scope, scope.interpolateParams, scope.defaultText, scope.requestedLangKey);
             }
           }
         };
 
         // Put translation processing function outside loop
-        var updateTranslation = function(translateAttr, translationId, scope, interpolateParams, defaultTranslationText) {
+        var updateTranslation = function(translateAttr, translationId, scope, interpolateParams, defaultTranslationText, requestedLangKey) {
           if (translationId) {
-            $translate(translationId, interpolateParams, translateInterpolation, defaultTranslationText)
+            $translate(translationId, interpolateParams, translateInterpolation, defaultTranslationText, requestedLangKey)
               .then(function (translation) {
                 applyTranslation(translation, scope, true, translateAttr);
               }, function (translationId) {
